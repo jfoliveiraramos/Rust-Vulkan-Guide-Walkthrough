@@ -8,3 +8,9 @@ The objective is to learn and lay the necessary foundations to later develop an 
 - [Vulkan Tutorial](https://kylemayes.github.io/vulkanalia/)
 - [Rust Book](https://doc.rust-lang.org/book/)
 - [Rust Documentation](https://doc.rust-lang.org/std/)
+
+## Run
+
+```bash
+cargo run
+```
