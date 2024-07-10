@@ -1,7 +1,7 @@
 # Rust Vulkan Guide
 
 This is a personal project following an online guide on Vulkan with Rust. 
-The objective is to learn and lay the necessary foundations to develop a custom engine in the process, while also learning Rust.
+The objective is to learn and lay the necessary foundations to later develop an engine for future projects, while also learning Rust.
 
 ## Resources
 
