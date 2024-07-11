@@ -9,6 +9,29 @@ The objective is to learn and lay the necessary foundations to later develop an 
 - [Rust Book](https://doc.rust-lang.org/book/)
 - [Rust Documentation](https://doc.rust-lang.org/std/)
 
+## Installation Requirements
+
+### Rust 
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+### Vulkan SDK
+
+- `vulkan-tools` - Command line utilities for the Vulkan ecosystem, including `vkcube` and `vulkaninfo`.
+- `libvulkan-dev` - Installs the Vulkan loader.
+- `vulkan-validationlayers-dev` -  Installs the standard validation layers.
+
+```bash
+sudo apt install vulkan-tools libvulkan-dev vulkan-validationlayers-dev
+```
+
+Test the installation with:
+```bash
+vkcube
+```
+
 ## Run
 
 ```bash
