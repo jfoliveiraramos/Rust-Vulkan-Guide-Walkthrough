@@ -9,7 +9,9 @@ The objective is to learn and lay the necessary foundations to later develop an 
 - [Rust Book](https://doc.rust-lang.org/book/)
 - [Rust Documentation](https://doc.rust-lang.org/std/)
 
-## Installation Requirements
+---
+
+## Linux Installation Requirements
 
 ### Rust 
 
@@ -27,7 +29,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 sudo apt install vulkan-tools libvulkan-dev vulkan-validationlayers-dev
 ```
 
-Test the installation with:
+Test the Vulkan SDK with:
 ```bash
 vkcube
 ```
@@ -37,3 +39,13 @@ vkcube
 ```bash
 cargo run
 ```
+
+---
+
+# Progress
+
+Current Guide Chaper: [Instance](https://kylemayes.github.io/vulkanalia/setup/instance.html)
+
+---
+
+Last Updated: 11-07-2024
