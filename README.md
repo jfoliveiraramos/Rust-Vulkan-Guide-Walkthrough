@@ -44,7 +44,7 @@ cargo run
 
 # Progress
 
-Current Guide Chaper: [Instance](https://kylemayes.github.io/vulkanalia/setup/instance.html)
+Current Guide Chaper: [Validation Layers](https://kylemayes.github.io/vulkanalia/setup/validation_layers.html)
 
 ---
 
