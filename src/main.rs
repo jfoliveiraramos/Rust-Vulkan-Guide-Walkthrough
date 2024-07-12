@@ -16,7 +16,7 @@ use vulkanalia::prelude::v1_0::*;
 use winit::dpi::LogicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoop;
-use winit::window::{self, Window, WindowBuilder};
+use winit::window::{self, Theme, Window, WindowBuilder};
 
 const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
 
@@ -59,6 +59,7 @@ fn main() -> Result<()> {
     let window = WindowBuilder::new()
         .with_title("Vulkan Tutorial (Rust)")
         .with_inner_size(LogicalSize::new(1024, 768))
+        .with_theme(Some(Theme::Dark))
         .build(&event_loop)?;
 
     let mut app = unsafe { App::create(&window)? };
