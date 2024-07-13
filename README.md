@@ -49,7 +49,7 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chaper: [Validation Layers](https://kylemayes.github.io/vulkanalia/setup/validation_layers.html)
+Current Guide Chaper: [Validation Layers](https://kylemayes.github.io/vulkanalia/setup/physical_devices_and_queue_families.html)
 
 ---
 
