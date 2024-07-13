@@ -40,6 +40,11 @@ vkcube
 cargo run
 ```
 
+To see debug logs:
+```bash
+RUST_LOG="debug" cargo run
+```
+
 ---
 
 # Progress
