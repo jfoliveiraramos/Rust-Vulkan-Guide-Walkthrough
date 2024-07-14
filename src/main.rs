@@ -5,12 +5,10 @@
     clippy::unnecessary_wraps
 )]
 
-use std::any;
 use std::collections::HashSet;
 use std::ffi::CStr;
 use std::os::raw::c_void;
 
-use vk::DebugUtilsMessengerCreateInfoEXT;
 use vulkanalia::vk::ExtDebugUtilsExtension;
 
 use vulkanalia::Version;
@@ -28,36 +26,41 @@ use winit::window::{self, Theme, Window, WindowBuilder};
 
 use thiserror::Error;
 
-const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
+fn main() -> Result<()> {
+    pretty_env_logger::init();
 
-const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
-const VALIDATION_LAYER: vk::ExtensionName = vk::ExtensionName::from_bytes(b"VK_LAYER_KHRONOS_validation");
+    let event_loop = EventLoop::new()?;
+    let window = WindowBuilder::new()
+        .with_title("Vulkan Tutorial (Rust)")
+        .with_inner_size(LogicalSize::new(1024, 768))
+        .with_theme(Some(Theme::Dark))
+        .build(&event_loop)?;
 
-extern "system" fn debug_callback(
-    serverity: vk::DebugUtilsMessageSeverityFlagsEXT,
-    type_: vk::DebugUtilsMessageTypeFlagsEXT,
-    data: *const vk::DebugUtilsMessengerCallbackDataEXT,
-    _: *mut c_void,
-) -> vk::Bool32 {
-    let data = unsafe { *data };
-    let message = unsafe { CStr::from_ptr(data.message) }.to_string_lossy();
+    let mut app = unsafe { App::create(&window)? };
+    event_loop.run(move |event, elwt| {
+        match event {
+    
+            Event::AboutToWait => window.request_redraw(),
+            Event::WindowEvent { event, .. } => match event {
+   
+                WindowEvent::RedrawRequested if !elwt.exiting() => unsafe { app.render(&window) }.unwrap(),
+   
+                WindowEvent::CloseRequested => {
+                    elwt.exit();
+                    unsafe { app.destroy(); }
+                }
+                _ => {}
+            }
+            _ => {}
+        }
+    })?;
 
-    if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::ERROR {
-        error!("({:?}) {}", type_, message);
-    }
-    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::WARNING {
-        warn!("({:?}) {}", type_, message);
-    }
-    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::INFO {
-        info!("({:?}) {}", type_, message);
-    }
-    else {
-        trace!("({:?}) {}", type_, message);
-    }
-
-    vk::FALSE
+    Ok(())
 }
 
+const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
+const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
+const VALIDATION_LAYER: vk::ExtensionName = vk::ExtensionName::from_bytes(b"VK_LAYER_KHRONOS_validation");
 
 unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) -> Result<Instance> {
     let application_info = vk::ApplicationInfo::builder()
@@ -133,37 +136,32 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
 
     Ok(instance)
 }
-fn main() -> Result<()> {
-    pretty_env_logger::init();
 
-    let event_loop = EventLoop::new()?;
-    let window = WindowBuilder::new()
-        .with_title("Vulkan Tutorial (Rust)")
-        .with_inner_size(LogicalSize::new(1024, 768))
-        .with_theme(Some(Theme::Dark))
-        .build(&event_loop)?;
+extern "system" fn debug_callback(
+    serverity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    type_: vk::DebugUtilsMessageTypeFlagsEXT,
+    data: *const vk::DebugUtilsMessengerCallbackDataEXT,
+    _: *mut c_void,
+) -> vk::Bool32 {
+    let data = unsafe { *data };
+    let message = unsafe { CStr::from_ptr(data.message) }.to_string_lossy();
 
-    let mut app = unsafe { App::create(&window)? };
-    event_loop.run(move |event, elwt| {
-        match event {
-    
-            Event::AboutToWait => window.request_redraw(),
-            Event::WindowEvent { event, .. } => match event {
-   
-                WindowEvent::RedrawRequested if !elwt.exiting() => unsafe { app.render(&window) }.unwrap(),
-   
-                WindowEvent::CloseRequested => {
-                    elwt.exit();
-                    unsafe { app.destroy(); }
-                }
-                _ => {}
-            }
-            _ => {}
-        }
-    })?;
+    if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::ERROR {
+        error!("({:?}) {}", type_, message);
+    }
+    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::WARNING {
+        warn!("({:?}) {}", type_, message);
+    }
+    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::INFO {
+        info!("({:?}) {}", type_, message);
+    }
+    else {
+        trace!("({:?}) {}", type_, message);
+    }
 
-    Ok(())
+    vk::FALSE
 }
+
 
 #[derive(Clone, Debug)]
 struct App {
@@ -226,8 +224,6 @@ unsafe fn check_physical_device(
     physical_device: vk::PhysicalDevice
 ) -> Result<()> {
     
-//    let properties = instance.get_physical_device_properties(physical_device);
-//    let features = instance.get_physical_device_features(physical_device);
     QueueFamilyIndices::get(instance, data, physical_device)?;
     Ok(())
 }
