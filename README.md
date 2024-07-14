@@ -49,7 +49,7 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chaper: [Decives and Queues](https://kylemayes.github.io/vulkanalia/setup/physical_devices_and_queue_families.html)
+Current Guide Chaper: [Logical device and queues](https://kylemayes.github.io/vulkanalia/setup/logical_device_and_queues.html)
 
 ---
 
