@@ -26,6 +26,8 @@ use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::{self, Theme, Window, WindowBuilder};
 
+use thiserror::Error;
+
 const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
 
 const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
@@ -176,6 +178,7 @@ impl App {
         let entry = Entry::new(loader).map_err(|b| anyhow!("{}", b))?;
         let mut data = AppData::default();
         let instance = create_instance(window, &entry, &mut data)?;
+        pick_physical_device(&instance, &mut data)?;
         Ok(Self { entry, instance, data })
     }
 
@@ -195,4 +198,63 @@ impl App {
 #[derive(Clone, Debug, Default)]
 struct AppData {
     messenger: vk::DebugUtilsMessengerEXT,
+    physical_device: vk::PhysicalDevice
+}
+
+#[derive(Debug,Error)]
+#[error("Missing {0}.")]
+pub struct SuitabilityError(pub &'static str);
+
+unsafe fn pick_physical_device(instance: &Instance, data: &mut AppData) -> Result<()> {
+    for physical_device in instance.enumerate_physical_devices()? {
+        let properties = instance.get_physical_device_properties(physical_device);
+
+        if let Err(error) = check_physical_device(instance, data, physical_device) {
+            warn!("Skipping physical_device (`{}`): {}", properties.device_name, error)
+        } else {
+            info!("Selected physical_device (`{}`): ", properties.device_name);
+            data.physical_device = physical_device;
+            return Ok(());
+        }
+    }
+    Err(anyhow!("Failed to find suitable physical device."))
+}
+
+unsafe fn check_physical_device(
+    instance: &Instance, 
+    data: &AppData,
+    physical_device: vk::PhysicalDevice
+) -> Result<()> {
+    
+//    let properties = instance.get_physical_device_properties(physical_device);
+//    let features = instance.get_physical_device_features(physical_device);
+    QueueFamilyIndices::get(instance, data, physical_device)?;
+    Ok(())
+}
+
+#[derive(Copy, Clone, Debug)]
+struct QueueFamilyIndices {
+    graphics: u32,
+}
+
+impl QueueFamilyIndices {
+    unsafe fn get(
+        instance: &Instance,
+        data: &AppData,
+        physical_device: vk::PhysicalDevice
+    ) -> Result<Self> {
+         
+        let properties = instance.get_physical_device_queue_family_properties(physical_device);
+
+        let graphics = properties
+            .iter()
+            .position(|p| p.queue_flags.contains(vk::QueueFlags::GRAPHICS))
+            .map(|i| i as u32);
+
+        if let Some(graphics) = graphics {
+            Ok(Self { graphics })
+        } else {
+            Err(anyhow!(SuitabilityError("Missing required queue families.")))
+        }
+    }
 }
