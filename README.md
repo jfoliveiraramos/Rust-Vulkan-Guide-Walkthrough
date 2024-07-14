@@ -11,7 +11,7 @@ The objective is to learn and lay the necessary foundations to later develop an 
 
 ---
 
-## Linux Installation Requirements
+## Ubuntu Installation Requirements
 
 ### Rust 
 
