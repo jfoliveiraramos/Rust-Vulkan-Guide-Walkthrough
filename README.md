@@ -49,7 +49,7 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chaper: [Logical device and queues](https://kylemayes.github.io/vulkanalia/setup/logical_device_and_queues.html)
+Current Guide Chaper: [Window Surface](https://kylemayes.github.io/vulkanalia/presentation/window_surface.html)
 
 ---
 

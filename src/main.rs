@@ -9,7 +9,6 @@ use std::collections::HashSet;
 use std::ffi::CStr;
 use std::os::raw::c_void;
 
-use vk::FenceImportFlags;
 use vulkanalia::vk::ExtDebugUtilsExtension;
 
 use vulkanalia::Version;
