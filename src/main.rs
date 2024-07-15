@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use std::ffi::CStr;
 use std::os::raw::c_void;
 
+use vk::FenceImportFlags;
 use vulkanalia::vk::ExtDebugUtilsExtension;
 
 use vulkanalia::Version;
@@ -22,9 +23,13 @@ use vulkanalia::prelude::v1_0::*;
 use winit::dpi::LogicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoop;
-use winit::window::{self, Theme, Window, WindowBuilder};
+use winit::window::{ Theme, Window, WindowBuilder};
 
 use thiserror::Error;
+
+const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
+const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
+const VALIDATION_LAYER: vk::ExtensionName = vk::ExtensionName::from_bytes(b"VK_LAYER_KHRONOS_validation");
 
 fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -58,9 +63,30 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
-const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
-const VALIDATION_LAYER: vk::ExtensionName = vk::ExtensionName::from_bytes(b"VK_LAYER_KHRONOS_validation");
+extern "system" fn debug_callback(
+    serverity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    type_: vk::DebugUtilsMessageTypeFlagsEXT,
+    data: *const vk::DebugUtilsMessengerCallbackDataEXT,
+    _: *mut c_void,
+) -> vk::Bool32 {
+    let data = unsafe { *data };
+    let message = unsafe { CStr::from_ptr(data.message) }.to_string_lossy();
+
+    if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::ERROR {
+        error!("({:?}) {}", type_, message);
+    }
+    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::WARNING {
+        warn!("({:?}) {}", type_, message);
+    }
+    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::INFO {
+        info!("({:?}) {}", type_, message);
+    }
+    else {
+        trace!("({:?}) {}", type_, message);
+    }
+
+    vk::FALSE
+}
 
 unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) -> Result<Instance> {
     let application_info = vk::ApplicationInfo::builder()
@@ -70,14 +96,13 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
         .engine_version(vk::make_version(1, 0, 0))
         .api_version(vk::make_version(1, 0, 0));
 
-    let avaialbe_layers = entry
+    let available_layers = entry
         .enumerate_instance_layer_properties()?
         .iter()
         .map(|l| l.layer_name)
         .collect::<HashSet<_>>();
-
     
-    if VALIDATION_ENABLED && !avaialbe_layers.contains(&VALIDATION_LAYER) {
+    if VALIDATION_ENABLED && !available_layers.contains(&VALIDATION_LAYER) {
         return Err(anyhow!("Validation layer requested but not supported."));
     }
 
@@ -137,37 +162,47 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
     Ok(instance)
 }
 
-extern "system" fn debug_callback(
-    serverity: vk::DebugUtilsMessageSeverityFlagsEXT,
-    type_: vk::DebugUtilsMessageTypeFlagsEXT,
-    data: *const vk::DebugUtilsMessengerCallbackDataEXT,
-    _: *mut c_void,
-) -> vk::Bool32 {
-    let data = unsafe { *data };
-    let message = unsafe { CStr::from_ptr(data.message) }.to_string_lossy();
+fn create_logical_device(entry: &Entry, instance: &Instance, data: &mut AppData) -> Result<Device> {
+    let indices = unsafe { QueueFamilyIndices::get(instance, data, data.physical_device) }?;
 
-    if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::ERROR {
-        error!("({:?}) {}", type_, message);
-    }
-    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::WARNING {
-        warn!("({:?}) {}", type_, message);
-    }
-    else if serverity >= vk::DebugUtilsMessageSeverityFlagsEXT::INFO {
-        info!("({:?}) {}", type_, message);
-    }
-    else {
-        trace!("({:?}) {}", type_, message);
-    }
+    let queue_priorities = &[1.0];
+    let queue_info = vk::DeviceQueueCreateInfo::builder()
+        .queue_family_index(indices.graphics)
+        .queue_priorities(queue_priorities);
 
-    vk::FALSE
+    let layers = if VALIDATION_ENABLED {
+        vec![VALIDATION_LAYER.as_ptr()]
+    } else {
+        vec![]
+    };
+
+    let extensions = if cfg!(target_os = "macos") && entry.version()? >= PORTABILITY_MACOS_VERSION {
+        vec![vk::KHR_PORTABILITY_SUBSET_EXTENSION.name.as_ptr()]
+    } else {
+        vec![]
+    };
+
+    let features = vk::PhysicalDeviceFeatures::builder();
+
+    let queue_infos = &[queue_info];
+    let info = vk::DeviceCreateInfo::builder()
+        .queue_create_infos(queue_infos)
+        .enabled_layer_names(&layers)
+        .enabled_extension_names(&extensions)
+        .enabled_features(&features);
+
+    let device = unsafe { instance.create_device(data.physical_device, &info, None) }?;
+    data.graphics_queue = unsafe { device.get_device_queue(indices.graphics, 0) };
+
+    Ok(device)
 }
-
 
 #[derive(Clone, Debug)]
 struct App {
     entry: Entry,
     instance: Instance,
-    data: AppData
+    data: AppData,
+    device: Device
 }
 
 impl App {
@@ -177,7 +212,8 @@ impl App {
         let mut data = AppData::default();
         let instance = create_instance(window, &entry, &mut data)?;
         pick_physical_device(&instance, &mut data)?;
-        Ok(Self { entry, instance, data })
+        let device = create_logical_device(&entry, &instance, &mut data)?;
+        Ok(Self { entry, instance, data, device })
     }
 
     unsafe fn render(&mut self, window: &Window) -> Result<()> {
@@ -189,6 +225,7 @@ impl App {
             self.instance.destroy_debug_utils_messenger_ext(self.data.messenger, None)
         }
 
+        self.device.destroy_device(None);
         self.instance.destroy_instance(None);
     }
 }
@@ -196,7 +233,8 @@ impl App {
 #[derive(Clone, Debug, Default)]
 struct AppData {
     messenger: vk::DebugUtilsMessengerEXT,
-    physical_device: vk::PhysicalDevice
+    physical_device: vk::PhysicalDevice,
+    graphics_queue: vk::Queue,
 }
 
 #[derive(Debug,Error)]
