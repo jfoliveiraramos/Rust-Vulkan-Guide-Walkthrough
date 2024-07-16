@@ -49,7 +49,7 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chaper: [Window Surface](https://kylemayes.github.io/vulkanalia/presentation/window_surface.html)
+Current Guide Chapter: [Window Surface](https://kylemayes.github.io/vulkanalia/presentation/window_surface.html)
 
 ---
 
