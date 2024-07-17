@@ -26,6 +26,8 @@ use winit::window::{ Theme, Window, WindowBuilder};
 
 use thiserror::Error;
 
+use vulkanalia::vk::KhrSurfaceExtension;
+
 const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
 const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
 const VALIDATION_LAYER: vk::ExtensionName = vk::ExtensionName::from_bytes(b"VK_LAYER_KHRONOS_validation");
@@ -234,6 +236,7 @@ struct AppData {
     messenger: vk::DebugUtilsMessengerEXT,
     physical_device: vk::PhysicalDevice,
     graphics_queue: vk::Queue,
+    surface: vk::SurfaceKHR,
 }
 
 #[derive(Debug,Error)]
