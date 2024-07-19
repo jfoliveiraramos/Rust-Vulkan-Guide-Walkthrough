@@ -45,12 +45,12 @@ fn main() -> Result<()> {
     let mut app = unsafe { App::create(&window)? };
     event_loop.run(move |event, elwt| {
         match event {
-    
+
             Event::AboutToWait => window.request_redraw(),
             Event::WindowEvent { event, .. } => match event {
-   
+
                 WindowEvent::RedrawRequested if !elwt.exiting() => unsafe { app.render(&window) }.unwrap(),
-   
+
                 WindowEvent::CloseRequested => {
                     elwt.exit();
                     unsafe { app.destroy(); }
@@ -102,7 +102,7 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
         .iter()
         .map(|l| l.layer_name)
         .collect::<HashSet<_>>();
-    
+
     if VALIDATION_ENABLED && !available_layers.contains(&VALIDATION_LAYER) {
         return Err(anyhow!("Validation layer requested but not supported."));
     }
@@ -123,8 +123,8 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
     }
 
     let flags = if 
-        cfg!(target_os = "macos") && 
-        entry.version()? >= PORTABILITY_MACOS_VERSION 
+    cfg!(target_os = "macos") && 
+    entry.version()? >= PORTABILITY_MACOS_VERSION 
     {
         info!("Enabling extensions for macOS portability.");
         extensions.push(vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION.name.as_ptr());
@@ -153,7 +153,7 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
     if VALIDATION_ENABLED {
         info = info.push_next(&mut debug_info);
     }
-    
+
     let instance = entry.create_instance(&info, None)?;
 
     if VALIDATION_ENABLED {
@@ -166,10 +166,18 @@ unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) ->
 fn create_logical_device(entry: &Entry, instance: &Instance, data: &mut AppData) -> Result<Device> {
     let indices = unsafe { QueueFamilyIndices::get(instance, data, data.physical_device) }?;
 
+    let mut unique_indices = HashSet::new();
+    unique_indices.insert(indices.graphics);
+    unique_indices.insert(indices.present);
+
     let queue_priorities = &[1.0];
-    let queue_info = vk::DeviceQueueCreateInfo::builder()
-        .queue_family_index(indices.graphics)
-        .queue_priorities(queue_priorities);
+    let queue_infos = unique_indices
+        .iter()
+        .map(|i| {
+            vk::DeviceQueueCreateInfo::builder()
+                .queue_family_index(*i)
+                .queue_priorities(queue_priorities)
+        }).collect::<Vec<_>>();
 
     let layers = if VALIDATION_ENABLED {
         vec![VALIDATION_LAYER.as_ptr()]
@@ -185,15 +193,16 @@ fn create_logical_device(entry: &Entry, instance: &Instance, data: &mut AppData)
 
     let features = vk::PhysicalDeviceFeatures::builder();
 
-    let queue_infos = &[queue_info];
     let info = vk::DeviceCreateInfo::builder()
-        .queue_create_infos(queue_infos)
+        .queue_create_infos(&queue_infos)
         .enabled_layer_names(&layers)
         .enabled_extension_names(&extensions)
         .enabled_features(&features);
 
     let device = unsafe { instance.create_device(data.physical_device, &info, None) }?;
+
     data.graphics_queue = unsafe { device.get_device_queue(indices.graphics, 0) };
+    data.present_queue = unsafe { device.get_device_queue(indices.present, 0) };
 
     Ok(device)
 }
@@ -226,7 +235,7 @@ impl App {
         if VALIDATION_ENABLED {
             self.instance.destroy_debug_utils_messenger_ext(self.data.messenger, None)
         }
-        
+
         self.device.destroy_device(None);
         self.instance.destroy_surface_khr(self.data.surface, None);
         self.instance.destroy_instance(None);
@@ -238,6 +247,7 @@ struct AppData {
     messenger: vk::DebugUtilsMessengerEXT,
     physical_device: vk::PhysicalDevice,
     graphics_queue: vk::Queue,
+    present_queue: vk::Queue,
     surface: vk::SurfaceKHR,
 }
 
@@ -265,7 +275,7 @@ unsafe fn check_physical_device(
     data: &AppData,
     physical_device: vk::PhysicalDevice
 ) -> Result<()> {
-    
+
     QueueFamilyIndices::get(instance, data, physical_device)?;
     Ok(())
 }
@@ -273,6 +283,7 @@ unsafe fn check_physical_device(
 #[derive(Copy, Clone, Debug)]
 struct QueueFamilyIndices {
     graphics: u32,
+    present: u32,
 }
 
 impl QueueFamilyIndices {
@@ -281,7 +292,7 @@ impl QueueFamilyIndices {
         data: &AppData,
         physical_device: vk::PhysicalDevice
     ) -> Result<Self> {
-         
+
         let properties = instance.get_physical_device_queue_family_properties(physical_device);
 
         let graphics = properties
@@ -289,8 +300,20 @@ impl QueueFamilyIndices {
             .position(|p| p.queue_flags.contains(vk::QueueFlags::GRAPHICS))
             .map(|i| i as u32);
 
-        if let Some(graphics) = graphics {
-            Ok(Self { graphics })
+        let mut present = None;
+
+        for (index, properties) in properties.iter().enumerate() {
+            if instance.get_physical_device_surface_support_khr(
+                physical_device,
+                index as u32,
+                data.surface
+            )? {
+                present = Some(index as u32);
+                break;
+            }
+        }
+        if let (Some(graphics), Some(present)) = (graphics, present) {
+            Ok(Self { graphics, present })
         } else {
             Err(anyhow!(SuitabilityError("Missing required queue families.")))
         }
