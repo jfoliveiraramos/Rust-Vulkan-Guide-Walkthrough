@@ -49,7 +49,7 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chapter: [Images Views](https://kylemayes.github.io/vulkanalia/presentation/image_views.html)
+Current Guide Chapter: [Pipeline - Introduction](https://kylemayes.github.io/vulkanalia/pipeline/introduction.html)
 
 ---
 
