@@ -49,8 +49,8 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chapter: [Window Surface](https://kylemayes.github.io/vulkanalia/presentation/window_surface.html)
+Current Guide Chapter: [Images Views](https://kylemayes.github.io/vulkanalia/presentation/image_views.html)
 
 ---
 
-Last Updated: 11-07-2024
+Last Updated: 04-08-2024
