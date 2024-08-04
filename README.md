@@ -49,8 +49,8 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chaper: [Window Surface](https://kylemayes.github.io/vulkanalia/presentation/window_surface.html)
+Current Guide Chapter: [Pipeline - Introduction](https://kylemayes.github.io/vulkanalia/pipeline/introduction.html)
 
 ---
 
-Last Updated: 11-07-2024
+Last Updated: 04-08-2024
