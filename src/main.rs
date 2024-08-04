@@ -27,6 +27,9 @@ use winit::window::{ Theme, Window, WindowBuilder};
 use thiserror::Error;
 
 use vulkanalia::vk::KhrSurfaceExtension;
+use vulkanalia::vk::KhrSwapchainExtension;
+
+const DEVICE_EXTENSIONS: &[vk::ExtensionName] = &[vk::KHR_SWAPCHAIN_EXTENSION.name];
 
 const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
 const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
@@ -185,11 +188,14 @@ fn create_logical_device(entry: &Entry, instance: &Instance, data: &mut AppData)
         vec![]
     };
 
-    let extensions = if cfg!(target_os = "macos") && entry.version()? >= PORTABILITY_MACOS_VERSION {
-        vec![vk::KHR_PORTABILITY_SUBSET_EXTENSION.name.as_ptr()]
-    } else {
-        vec![]
-    };
+    let mut extensions = DEVICE_EXTENSIONS
+        .iter()
+        .map(|n| n.as_ptr())
+        .collect::<Vec<_>>();
+
+    if cfg!(target_os = "macos") && entry.version()? >= PORTABILITY_MACOS_VERSION {
+        extensions.push(vk::KHR_PORTABILITY_SUBSET_EXTENSION.name.as_ptr())
+    } 
 
     let features = vk::PhysicalDeviceFeatures::builder();
 
@@ -277,7 +283,57 @@ unsafe fn check_physical_device(
 ) -> Result<()> {
 
     QueueFamilyIndices::get(instance, data, physical_device)?;
+    check_physical_device_extensions(instance, physical_device)?;
+
+    let support = SwapchainSupport::get(instance, data, physical_device)?;
+    if support.present_modes.is_empty() || support.formats.is_empty() {
+        return Err(anyhow!(SuitabilityError("Insufficient swapchain support")));
+    }
+
     Ok(())
+}
+
+unsafe fn check_physical_device_extensions(
+    instance: &Instance,
+    physical_device: vk::PhysicalDevice
+) -> Result<()> {
+
+    let extensions = instance
+        .enumerate_device_extension_properties(physical_device, None)?
+        .iter()
+        .map(|e| e.extension_name)
+        .collect::<HashSet<_>>();
+
+    if DEVICE_EXTENSIONS.iter().all(|e| extensions.contains(e)) {
+        Ok(())
+    } else {
+        Err(anyhow!(SuitabilityError("Missing required device extensions.")))
+    }
+}
+
+#[derive(Clone, Debug)]
+struct SwapchainSupport {
+    capabilities: vk::SurfaceCapabilitiesKHR,
+    formats: Vec<vk::SurfaceFormatKHR>,
+    present_modes: Vec<vk::PresentModeKHR>
+}
+
+impl SwapchainSupport {
+
+    unsafe fn get(
+        instance: &Instance,
+        data: &AppData,
+        physical_device: vk::PhysicalDevice
+    ) -> Result<Self> {
+        Ok(Self {
+            capabilities: instance
+                .get_physical_device_surface_capabilities_khr(physical_device, data.surface)?,
+            formats: instance
+                .get_physical_device_surface_formats_khr(physical_device, data.surface)?,
+            present_modes: instance
+                .get_physical_device_surface_present_modes_khr(physical_device, data.surface)?,
+        })
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
