@@ -1,5 +1,7 @@
 pub mod appdata;
+mod command;
 mod device;
+mod framebuffers;
 mod instance;
 mod pipeline;
 pub mod queue;
@@ -7,7 +9,9 @@ mod swapchain;
 
 use crate::constants::*;
 use appdata::AppData;
+use command::{create_command_buffers, create_command_pool};
 use device::{create_logical_device, pick_physical_device};
+use framebuffers::create_frame_buffers;
 use instance::*;
 use pipeline::{create_pipeline, create_render_pass};
 use swapchain::{create_swapchain, create_swapchain_image_views};
@@ -45,6 +49,9 @@ impl App {
         create_swapchain_image_views(&device, &mut data)?;
         create_render_pass(&instance, &device, &mut data)?;
         create_pipeline(&device, &mut data)?;
+        create_frame_buffers(&device, &mut data)?;
+        create_command_pool(&instance, &device, &mut data)?;
+        create_command_buffers(&device, &mut data)?;
         Ok(Self {
             entry,
             instance,
@@ -58,24 +65,32 @@ impl App {
     }
 
     pub unsafe fn destroy(&mut self) {
-        if VALIDATION_ENABLED {
-            self.instance
-                .destroy_debug_utils_messenger_ext(self.data.messenger, None)
-        }
+        self.device
+            .destroy_command_pool(self.data.command_pool, None);
 
-        self.device.destroy_device(None);
-        self.instance.destroy_surface_khr(self.data.surface, None);
-        self.instance.destroy_instance(None);
-
-        self.device.destroy_swapchain_khr(self.data.swapchain, None);
         self.data
-            .swapchain_image_views
+            .framebuffers
             .iter()
-            .for_each(|v| self.device.destroy_image_view(*v, None));
+            .for_each(|fb| self.device.destroy_framebuffer(*fb, None));
 
         self.device.destroy_pipeline(self.data.pipeline, None);
         self.device
             .destroy_pipeline_layout(self.data.pipeline_layout, None);
         self.device.destroy_render_pass(self.data.render_pass, None);
+
+        self.data
+            .swapchain_image_views
+            .iter()
+            .for_each(|v| self.device.destroy_image_view(*v, None));
+        self.device.destroy_swapchain_khr(self.data.swapchain, None);
+
+        self.device.destroy_device(None);
+        self.instance.destroy_surface_khr(self.data.surface, None);
+
+        if VALIDATION_ENABLED {
+            self.instance
+                .destroy_debug_utils_messenger_ext(self.data.messenger, None)
+        }
+        self.instance.destroy_instance(None);
     }
 }
