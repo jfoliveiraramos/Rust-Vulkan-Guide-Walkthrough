@@ -49,8 +49,8 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chapter: [Pipeline - Introduction](https://kylemayes.github.io/vulkanalia/pipeline/introduction.html)
+Current Guide Chapter: [Drawing - Framebuffers](https://kylemayes.github.io/vulkanalia/drawing/framebuffers.html)
 
 ---
 
-Last Updated: 04-08-2024
+Last Updated: 13-08-2024
