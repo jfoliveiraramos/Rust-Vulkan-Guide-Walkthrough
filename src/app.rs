@@ -71,5 +71,8 @@ impl App {
             .swapchain_image_views
             .iter()
             .for_each(|v| self.device.destroy_image_view(*v, None));
+
+        self.device
+            .destroy_pipeline_layout(self.data.pipeline_layout, None);
     }
 }
