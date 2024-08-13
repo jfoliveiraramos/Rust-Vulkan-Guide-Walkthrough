@@ -15,7 +15,6 @@ use std::os::raw::c_void;
 
 use crate::constants::*;
 use super::appdata::AppData;
-use super::queue::QueueFamilyIndices;
 
 pub unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) -> Result<Instance> {
     let application_info = vk::ApplicationInfo::builder()
@@ -89,53 +88,6 @@ pub unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData
     } 
 
     Ok(instance)
-}
-
-pub fn create_logical_device(entry: &Entry, instance: &Instance, data: &mut AppData) -> Result<Device> {
-    let indices = unsafe { QueueFamilyIndices::get(instance, data, data.physical_device) }?;
-
-    let mut unique_indices = HashSet::new();
-    unique_indices.insert(indices.graphics);
-    unique_indices.insert(indices.present);
-
-    let queue_priorities = &[1.0];
-    let queue_infos = unique_indices
-        .iter()
-        .map(|i| {
-            vk::DeviceQueueCreateInfo::builder()
-                .queue_family_index(*i)
-                .queue_priorities(queue_priorities)
-        }).collect::<Vec<_>>();
-
-    let layers = if VALIDATION_ENABLED {
-        vec![VALIDATION_LAYER.as_ptr()]
-    } else {
-        vec![]
-    };
-
-    let mut extensions = DEVICE_EXTENSIONS
-        .iter()
-        .map(|n| n.as_ptr())
-        .collect::<Vec<_>>();
-
-    if cfg!(target_os = "macos") && entry.version()? >= PORTABILITY_MACOS_VERSION {
-        extensions.push(vk::KHR_PORTABILITY_SUBSET_EXTENSION.name.as_ptr())
-    } 
-
-    let features = vk::PhysicalDeviceFeatures::builder();
-
-    let info = vk::DeviceCreateInfo::builder()
-        .queue_create_infos(&queue_infos)
-        .enabled_layer_names(&layers)
-        .enabled_extension_names(&extensions)
-        .enabled_features(&features);
-
-    let device = unsafe { instance.create_device(data.physical_device, &info, None) }?;
-
-    data.graphics_queue = unsafe { device.get_device_queue(indices.graphics, 0) };
-    data.present_queue = unsafe { device.get_device_queue(indices.present, 0) };
-
-    Ok(device)
 }
 
 extern "system" fn debug_callback(

@@ -49,7 +49,7 @@ RUST_LOG="debug" cargo run
 
 # Progress
 
-Current Guide Chapter: [Pipeline - Introduction](https://kylemayes.github.io/vulkanalia/pipeline/introduction.html)
+Current Guide Chapter: [Pipeline - Fixed Functions](https://kylemayes.github.io/vulkanalia/pipeline/fixed_functions.html)
 
 ---
 

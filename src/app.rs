@@ -1,15 +1,16 @@
 pub mod appdata;
-mod creation;
 mod device;
+mod instance;
+mod pipeline;
 pub mod queue;
 mod swapchain;
 
 use crate::constants::*;
 use appdata::AppData;
-use creation::*;
-use device::pick_physical_device;
-use swapchain::create_swapchain;
-use swapchain::create_swapchain_image_views;
+use device::{create_logical_device, pick_physical_device};
+use instance::*;
+use pipeline::{create_pipeline, create_render_pass};
+use swapchain::{create_swapchain, create_swapchain_image_views};
 
 use vulkanalia::loader::{LibloadingLoader, LIBRARY};
 use vulkanalia::prelude::v1_0::*;
@@ -42,6 +43,8 @@ impl App {
         let device = create_logical_device(&entry, &instance, &mut data)?;
         create_swapchain(window, &instance, &device, &mut data)?;
         create_swapchain_image_views(&device, &mut data)?;
+        create_render_pass(&instance, &device, &mut data)?;
+        create_pipeline(&device, &mut data)?;
         Ok(Self {
             entry,
             instance,
@@ -69,5 +72,10 @@ impl App {
             .swapchain_image_views
             .iter()
             .for_each(|v| self.device.destroy_image_view(*v, None));
+
+        self.device.destroy_pipeline(self.data.pipeline, None);
+        self.device
+            .destroy_pipeline_layout(self.data.pipeline_layout, None);
+        self.device.destroy_render_pass(self.data.render_pass, None);
     }
 }
