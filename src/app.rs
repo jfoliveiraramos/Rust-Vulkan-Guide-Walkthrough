@@ -73,6 +73,7 @@ impl App {
             .iter()
             .for_each(|v| self.device.destroy_image_view(*v, None));
 
+        self.device.destroy_pipeline(self.data.pipeline, None);
         self.device
             .destroy_pipeline_layout(self.data.pipeline_layout, None);
         self.device.destroy_render_pass(self.data.render_pass, None);

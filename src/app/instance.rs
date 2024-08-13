@@ -15,7 +15,6 @@ use std::os::raw::c_void;
 
 use crate::constants::*;
 use super::appdata::AppData;
-use super::queue::QueueFamilyIndices;
 
 pub unsafe fn create_instance(window: &Window, entry: &Entry, data: &mut AppData) -> Result<Instance> {
     let application_info = vk::ApplicationInfo::builder()

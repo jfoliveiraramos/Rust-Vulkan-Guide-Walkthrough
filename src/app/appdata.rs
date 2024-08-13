@@ -19,4 +19,5 @@ pub struct AppData {
 
     pub render_pass: vk::RenderPass,
     pub pipeline_layout: vk::PipelineLayout,
+    pub pipeline: vk::Pipeline,
 }
