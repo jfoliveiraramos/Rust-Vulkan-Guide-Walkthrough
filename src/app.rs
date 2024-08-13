@@ -9,7 +9,7 @@ use crate::constants::*;
 use appdata::AppData;
 use device::{create_logical_device, pick_physical_device};
 use instance::*;
-use pipeline::create_pipeline;
+use pipeline::{create_pipeline, create_render_pass};
 use swapchain::{create_swapchain, create_swapchain_image_views};
 
 use vulkanalia::loader::{LibloadingLoader, LIBRARY};
@@ -43,6 +43,7 @@ impl App {
         let device = create_logical_device(&entry, &instance, &mut data)?;
         create_swapchain(window, &instance, &device, &mut data)?;
         create_swapchain_image_views(&device, &mut data)?;
+        create_render_pass(&instance, &device, &mut data)?;
         create_pipeline(&device, &mut data)?;
         Ok(Self {
             entry,
@@ -74,5 +75,6 @@ impl App {
 
         self.device
             .destroy_pipeline_layout(self.data.pipeline_layout, None);
+        self.device.destroy_render_pass(self.data.render_pass, None);
     }
 }
