@@ -1,6 +1,5 @@
 use super::{queue::QueueFamilyIndices, AppData};
 use anyhow::Result;
-use vk::RenderPassBeginInfo;
 use vulkanalia::prelude::v1_0::*;
 
 pub unsafe fn create_command_pool(
